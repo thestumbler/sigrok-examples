@@ -1,0 +1,103 @@
+#!/bin/sh
+
+# Stripped down from `sigrok-cross-mingw` script
+# Used to build libserialport example programs
+
+set -e
+
+
+# Build target: "i686" (32bit) or "x86_64" (64bit).
+TARGET="x86_64"
+
+# The path where your MXE directory is located.
+MXE=$HOME/mxe-git
+
+# The base path prefix where the cross-compiled packages will be installed.
+PREFIXBASE=$HOME/sr_mingw
+
+# The base path prefix where to download files to and where to build packages.
+BUILDBASE=./build
+
+# Edit this to control verbose build output.
+V="V=1 VERBOSE=1"
+
+# Edit this to enable/disable/modify parallel compiles.
+PARALLEL="-j 2"
+
+# Edit this to enable/disable debug builds.
+DEBUG=0
+
+WGET="wget -c --quiet"
+GIT_CLONE="git clone --depth=1"
+REPO_BASE="git://sigrok.org"
+
+# Construct the build and install directory pathnames.
+if [ $TARGET = "i686" ]; then
+	SUFFIX="32"
+else
+	SUFFIX="64"
+fi
+if [ $DEBUG = 1 ]; then
+	# CFLAGS/CXXFLAGS contains "-g" per default for autotools projects.
+	BUILD_TYPE="Debug"
+	PREFIX=$PREFIXBASE"_debug_"$SUFFIX
+	BUILDDIR=$BUILDBASE"_debug_"$SUFFIX
+else
+	BUILD_TYPE="Release"
+	PREFIX=$PREFIXBASE"_release_"$SUFFIX
+	BUILDDIR=$BUILDBASE"_release_"$SUFFIX
+fi
+
+# -----------------------------------------------------------------------------
+
+# We need to find tools in the toolchain.
+export PATH=$MXE/usr/bin:$PATH
+TOOLCHAIN_TRIPLET="$TARGET-w64-mingw32.static.posix"
+CMAKE="$TOOLCHAIN_TRIPLET-cmake"
+
+P="$PREFIX/lib/pkgconfig"
+P2="$MXE/usr/$TOOLCHAIN_TRIPLET/lib/pkgconfig"
+C="--host=$TOOLCHAIN_TRIPLET --prefix=$PREFIX CPPFLAGS=-D__printf__=__gnu_printf__"
+L="--disable-shared --enable-static"
+
+if [ $TARGET = "i686" ]; then
+	export PKG_CONFIG_PATH_i686_w64_mingw32_static_posix="$P:$P2"
+else
+	export PKG_CONFIG_PATH_x86_64_w64_mingw32_static_posix="$P:$P2"
+fi
+
+
+# -----------------------------------------------------------------------------
+cd $BUILDDIR
+
+### # sigrok-cli
+### $GIT_CLONE $REPO_BASE/sigrok-cli
+### cd sigrok-cli
+### ./autogen.sh
+### ./configure $C
+### make $PARALLEL $V
+### make install $V
+### makensis contrib/sigrok-cli_cross.nsi
+### cd ..
+
+# used the above block of code for sigrok-cli as a go-by
+# sigrok-example
+#
+if [ "$1" = "clone" ]; then
+  $GIT_CLONE $REPO_BASE/sigrok-examples
+fi
+
+cd sigrok-examples
+
+if [ "$1" = "config" ]; then
+  ./autogen.sh
+  ./configure $C
+fi
+
+if [ "$1" = "make" ]; then
+  make $PARALLEL $V
+  make install $V
+fi
+
+cd ..
+

@@ -1,0 +1,10 @@
+-------------------------------------------------------------------------------
+README
+-------------------------------------------------------------------------------
+
+sigrok-examples are three small programs to demonstrate how to build
+a program using libserialport
+
+* move example-sigrok-mingw script to the same location as your 
+
+
